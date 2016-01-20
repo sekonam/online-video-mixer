@@ -53,8 +53,29 @@
 	margin-bottom:5%;
 }
 
-.wrapper::after {
-	display:block;
-	content:" ";
+.record-flogs {
 	clear:both;
+}
+
+.record-progress {
+	height:15px;
+	border:1px solid gray;
+	background-color:lightgray;
+	position:relative;
+}
+
+.record-progress .indicator {
+	width:10px;
+	height:30px;
+	border:1px solid gray;
+	background-color:lightgray;
+	position:absolute;
+	top:-7.5px;
+	left:0;
+	z-index:1;
+}
+
+.buttons {
+	margin-top:20px;
+	text-align:center;
 }
