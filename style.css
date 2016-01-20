@@ -1,0 +1,33 @@
+.wrapper {
+	width:1024px;
+	margin:15px auto;
+}
+
+.player {
+	transform-origin:top left;
+	background-repeat:no-repeat;
+}
+
+.main-stream {
+	float:left;
+	width:48%;
+}
+
+.all-streams {
+	float:right;
+	width:48%;
+}
+
+.stream {
+	float:left;
+	width:45%;
+	height:auto;
+	margin-right:4%;
+	margin-bottom:5%;
+}
+
+.wrapper:after {
+	display:block;
+	content:" ";
+	clear:both;
+}
