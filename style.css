@@ -4,8 +4,35 @@
 }
 
 .player {
+	position:relative;
 	transform-origin:top left;
 	background-repeat:no-repeat;
+}
+
+.all-streams .player::after {
+	content:"";
+	display:block;
+	width:100%;
+	height:15px;
+	position:absolute;
+	bottom:0px;
+	z-index:1;
+}
+
+.stream:nth-child(1) .player::after {
+	background-color:red;
+}
+
+.stream:nth-child(2) .player::after {
+	background-color:yellow;
+}
+
+.stream:nth-child(3) .player::after {
+	background-color:greenyellow;
+}
+
+.stream:nth-child(4) .player::after {
+	background-color:blue;
 }
 
 .main-stream {
@@ -26,7 +53,7 @@
 	margin-bottom:5%;
 }
 
-.wrapper:after {
+.wrapper::after {
 	display:block;
 	content:" ";
 	clear:both;
