@@ -1,9 +1,15 @@
+function getStyle(element) 
+{
+	return element.currentStyle || window.getComputedStyle(element);
+}
+
 function Player(element, videoUrl, frameAmount) 
 {
 	this.DELAY = 150;
 	this.REPLAY = false;
 	this.frame = {};
 	this.element = element;
+	this.style = getStyle(element);
 	this.counter = 0;
 	this.frameAmount = frameAmount;
 	this.onload = null;
@@ -80,40 +86,18 @@ function Mixer()
 	
 	var players = [],
 		mainPlayer = null,
-		self = this;
-
-	function init()
-	{
-		mainPlayer = new Player(document.querySelector('.main-stream .player'), 'sprite1xx.jpeg', 100, true);
-		mainPlayer.onend = function () {
-			self.stop();
-		};
-		
-		for (var i=1; i<=4; i++) {
-			(function (i) {
-				var player = new Player(
-					document.querySelector('.stream:nth-child(' + i + ') .player'), 
-					'sprite' + i + 'xx.jpeg', 
-					100
-				);
-				player.onload = function () {
-					var pw = document.querySelector('.stream:nth-child(' + i + ')'),
-						pwH3 = pw.querySelector('h3'),
-						pwH3style = pwH3.currentStyle || window.getComputedStyle(pwH3);
-						pwHeight = parseFloat(pwH3style.marginTop) + parseFloat(pwH3style.height) + parseFloat(pwH3style.marginBottom) + player.frame.height * player.frame.zoom;
-					pw.style.height = pwHeight + 'px';
-				};
-				players.push(player);
-			})(i);
-		}
-	} init();
+		self = this,
+		active = null;
 	
-	function load() {
-		mainPlayer.load();
-		players.map(function (player) {
-			player.load();
-		});
-	} load();
+	this.active = function () 
+	{
+		if (arguments.length > 0) {
+			active = arguments[0];
+			getStyle(active.element).borderWidth = '3px';
+		} else {
+			return active;
+		}
+	}
 	
 	function scroll() {
 		if (mainPlayer) {
@@ -136,18 +120,21 @@ function Mixer()
 		scroll();
 	};
 
-	this.stop= function () {
+	this.stop = function () 
+	{
 		this.played = false;
 		mainPlayer.stop();
 		players.map(function (player) {
 			player.stop();
 		});
+		
 		if (self.onstop && {}.toString.call(self.onstop) === '[object Function]') {
 			self.onstop.call(self);
 		}
 	};
 	
-	this.play = function () {
+	this.play = function () 
+	{
 		
 		if (this.played) {
 			this.stop();
@@ -157,6 +144,45 @@ function Mixer()
 		
 		return this.played;
 	};
+
+	function init()
+	{
+		mainPlayer = new Player(document.querySelector('.main-stream .player'), 'sprite1xx.jpeg', 100, true);
+		mainPlayer.onend = function () {
+			self.stop();
+		};
+		
+		for (var i=1; i<=4; i++) {
+			(function (i) {
+				var player = new Player(
+					document.querySelector('.stream:nth-child(' + i + ') .player'), 
+					'sprite' + i + 'xx.jpeg', 
+					100
+				);
+				player.onload = function () {
+					var pw = document.querySelector('.stream:nth-child(' + i + ')'),
+						pwH3 = pw.querySelector('h3'),
+						pwH3style = getStyle(pwH3);
+						pwHeight = parseFloat(pwH3style.marginTop) + parseFloat(pwH3style.height) + parseFloat(pwH3style.marginBottom) + player.frame.height * player.frame.zoom;
+					pw.style.height = pwHeight + 'px';
+				};
+				players.push(player);
+				
+				if (i == 1) {
+					self.active(player);
+				}
+			})(i);
+		}
+	} init();
+	
+	function load() 
+	{
+		mainPlayer.load();
+		players.map(function (player) {
+			player.load();
+		});
+	} load();
+	
 }
 
 window.onload = function () {
