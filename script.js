@@ -10,7 +10,6 @@ function removeClass(element, className)
 
 function AbstractPlayer(element, frameAmount) 
 {
-	this.img = null;
 	this.frame = {};
 	this.element = element;
 	this.counter = 0;
@@ -61,12 +60,12 @@ function AbstractPlayer(element, frameAmount)
 		pause = true;
 	};
 	
-	this._setFrameStyle = function () 
+	this._setFrameStyle = function (img) 
 	{
-		frame.width = this.img.width;
-		frame.height = frameAmount ? this.img.height / frameAmount : 0;
+		frame.width = img.width;
+		frame.height = frameAmount ? img.height / frameAmount : 0;
 		frame.ratio = frame.height == 0 ? 1 : frame.width / frame.height;
-		frame.zoom = this.img.width ? element.clientWidth / this.img.width : 1;
+		frame.zoom = img.width ? element.clientWidth / img.width : 1;
 		
 		var style = {
 				width: frame.width + 'px',
@@ -88,14 +87,13 @@ function Player(element, videoUrl, frameAmount)
 	this.src = videoUrl;
 	this.onload = null;
 	
-	element.style.backgroundImage = 'url(' + videoUrl + ')';
-	
 	var self = this;
 
 	this.img = new Image();
 	this.img.onload = function() 
 	{
-		self._setFrameStyle();
+		element.style.backgroundImage = 'url(' + videoUrl + ')';
+		self._setFrameStyle(self.img);
 		
 		if (self.onload && {}.toString.call(self.onload) === '[object Function]') {
 			self.onload.call(self);
@@ -110,21 +108,31 @@ function Player(element, videoUrl, frameAmount)
 
 function Recorder(element, initSource)
 {
-	Palyer.call(this, element, initSource.src, initSource.frameAmount);
+	AbstractPlayer.call(this, element, initSource.frameAmount);
 
 	var self = this,
-		srcs = [];
+		sources = [];
 	
 	var parentIterate = this._iterate;
 	this._iterate = function ()
 	{
+		if (this.counter == 0 || sources[this.counter-1] != sources[this.counter]) {
+			this._setFrameStyle(sources[this.counter].img);
+		}
+		
 		parentIterate.call(this);
-		element.style.backgroundImage = 'url(' + srcs[self.counter] + ')';
+		element.style.backgroundImage = 'url(' + sources[self.counter].src + ')';
 	};
 
-	this.load = function () 
+	for (var i=0; i < this.frameAmount; i++) {
+		sources[i] = initSource;
+	}
+	
+	var source0Onload = sources[0].onload ? sources[0].onload : function () {};
+	sources[0].onload = function ()
 	{
-		img.src = videoUrl;
+		source0Onload();
+		self._iterate();
 	};
 }
 
@@ -198,11 +206,6 @@ function Mixer()
 
 	function init()
 	{
-		mainPlayer = new Player(document.querySelector('.main-stream .player'), 'sprite1xx.jpeg', 100, true);
-		mainPlayer.onend = function () {
-			self.stop();
-		};
-		
 		for (var i=1; i<=4; i++) {
 			(function (i) {
 				var player = new Player(
@@ -210,13 +213,11 @@ function Mixer()
 					'sprite' + i + 'xx.jpeg', 
 					100
 				);
-				player.onload = function () {
-					var pw = document.querySelector('.stream:nth-child(' + i + ')'),
-						pwH3 = pw.querySelector('h3'),
-						pwH3style = getStyleRead(pwH3);
-						pwHeight = parseFloat(pwH3style.marginTop) + parseFloat(pwH3style.height) + parseFloat(pwH3style.marginBottom) + player.frame.height * player.frame.zoom;
-					pw.style.height = pwHeight + 'px';
-				};
+				players.push(player);
+				
+				/*
+				 * active player selection
+				 */
 				player.element.addEventListener('click', function () {
 					
 					if (this != self.active().element) {
@@ -224,18 +225,33 @@ function Mixer()
 					}
 					
 				});
-				players.push(player);
 				
 				if (i == 1) {
 					self.active(player);
 				}
+				
+				/*
+				 * streams default height fix
+				 */
+				player.onload = function () {
+					var pw = document.querySelector('.stream:nth-child(' + i + ')'),
+						pwH3 = pw.querySelector('h3'),
+						pwH3style = getStyleRead(pwH3);
+						pwHeight = parseFloat(pwH3style.marginTop) + parseFloat(pwH3style.height) + parseFloat(pwH3style.marginBottom) + player.frame.height * player.frame.zoom;
+					pw.style.height = pwHeight + 'px';
+				};
 			})(i);
 		}
+		
+		mainPlayer = new Recorder(document.querySelector('.main-stream .player'), players[0]);
+		mainPlayer.onend = function () {
+			self.stop();
+		};
+		
 	} init();
 	
 	function load() 
 	{
-		mainPlayer.load();
 		players.map(function (player) {
 			player.load();
 		});
