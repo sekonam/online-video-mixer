@@ -8,26 +8,31 @@ function removeClass(element, className)
 	element.className = element.className.replace(new RegExp(className, 'g'), '');
 }
 
-function Player(element, videoUrl, frameAmount) 
+function AbstractPlayer(element, frameAmount) 
 {
-	this.DELAY = 150;
-	this.REPLAY = false;
+	this.img = null;
 	this.frame = {};
 	this.element = element;
 	this.counter = 0;
 	this.frameAmount = frameAmount;
-	this.onload = null;
+
+	this.DELAY = 150;
+	this.REPLAY = false;
+
 	this.onend = null;
-	this.src = videoUrl;
 	
 	var self = this,
-		img = null,
 		pause = true,
 		frame = this.frame;
 
-	function run()
+	this._iterate = function ()
 	{
 		element.style.backgroundPosition = '0px ' + (-self.counter * frame.height) + 'px';
+	};
+
+	function run()
+	{
+		self._iterate();
 		
 		if (++self.counter >= frameAmount) {
 			self.counter = 0;
@@ -55,31 +60,70 @@ function Player(element, videoUrl, frameAmount)
 	this.stop = function () {
 		pause = true;
 	};
-
-	img = new Image();
-	img.onload = function() 
+	
+	this._setFrameStyle = function () 
 	{
-		frame.width = this.width;
-		frame.height = frameAmount ? this.height / frameAmount : 0;
+		frame.width = this.img.width;
+		frame.height = frameAmount ? this.img.height / frameAmount : 0;
 		frame.ratio = frame.height == 0 ? 1 : frame.width / frame.height;
-		frame.zoom = this.width ? element.clientWidth / this.width : 1;
+		frame.zoom = this.img.width ? element.clientWidth / this.img.width : 1;
 		
 		var style = {
 				width: frame.width + 'px',
 				height: frame.height + 'px',
-				transform: 'scale(' + frame.zoom + ')',
-				backgroundImage: 'url(' + videoUrl + ')' 
+				transform: 'scale(' + frame.zoom + ')'
 			};
 			
 		for (var field in style) {
 			element.style[field] = style[field];
 		}
+	};
+
+}
+
+function Player(element, videoUrl, frameAmount) 
+{
+	AbstractPlayer.call(this, element, frameAmount);
+
+	this.src = videoUrl;
+	this.onload = null;
+	
+	element.style.backgroundImage = 'url(' + videoUrl + ')';
+	
+	var self = this;
+
+	this.img = new Image();
+	this.img.onload = function() 
+	{
+		self._setFrameStyle();
 		
 		if (self.onload && {}.toString.call(self.onload) === '[object Function]') {
 			self.onload.call(self);
 		}
 	};
-	this.load = function () {
+	
+	this.load = function () 
+	{
+		this.img.src = videoUrl;
+	};
+}
+
+function Recorder(element, initSource)
+{
+	Palyer.call(this, element, initSource.src, initSource.frameAmount);
+
+	var self = this,
+		srcs = [];
+	
+	var parentIterate = this._iterate;
+	this._iterate = function ()
+	{
+		parentIterate.call(this);
+		element.style.backgroundImage = 'url(' + srcs[self.counter] + ')';
+	};
+
+	this.load = function () 
+	{
 		img.src = videoUrl;
 	};
 }
@@ -104,7 +148,7 @@ function Mixer()
 		} else {
 			return active;
 		}
-	}
+	};
 	
 	function scroll() {
 		if (mainPlayer) {
