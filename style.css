@@ -19,6 +19,18 @@
 	z-index:1;
 }
 
+.all-streams .player:hover {
+	cursor:pointer;
+}
+
+.all-streams .player.active-player:hover {
+	cursor:default;
+}
+	
+.active-player{
+	border:5px solid gray;
+}
+
 .stream:nth-child(1) .player::after {
 	background-color:red;
 }

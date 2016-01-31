@@ -1,6 +1,11 @@
-function getStyle(element) 
+function getStyleRead(element) 
 {
 	return element.currentStyle || window.getComputedStyle(element);
+}
+
+function removeClass(element, className) 
+{
+	element.className = element.className.replace(new RegExp(className, 'g'), '');
 }
 
 function Player(element, videoUrl, frameAmount) 
@@ -9,7 +14,6 @@ function Player(element, videoUrl, frameAmount)
 	this.REPLAY = false;
 	this.frame = {};
 	this.element = element;
-	this.style = getStyle(element);
 	this.counter = 0;
 	this.frameAmount = frameAmount;
 	this.onload = null;
@@ -92,8 +96,11 @@ function Mixer()
 	this.active = function () 
 	{
 		if (arguments.length > 0) {
+			if (active) {
+				removeClass(active.element, 'active-player');
+			}
 			active = arguments[0];
-			getStyle(active.element).borderWidth = '3px';
+			active.element.className += ' active-player';
 		} else {
 			return active;
 		}
@@ -162,10 +169,17 @@ function Mixer()
 				player.onload = function () {
 					var pw = document.querySelector('.stream:nth-child(' + i + ')'),
 						pwH3 = pw.querySelector('h3'),
-						pwH3style = getStyle(pwH3);
+						pwH3style = getStyleRead(pwH3);
 						pwHeight = parseFloat(pwH3style.marginTop) + parseFloat(pwH3style.height) + parseFloat(pwH3style.marginBottom) + player.frame.height * player.frame.zoom;
 					pw.style.height = pwHeight + 'px';
 				};
+				player.element.addEventListener('click', function () {
+					
+					if (this != self.active().element) {
+						self.active(player);
+					}
+					
+				});
 				players.push(player);
 				
 				if (i == 1) {
