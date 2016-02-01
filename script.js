@@ -52,19 +52,18 @@ function AbstractPlayer(element, frameAmount)
 			
 			if (!self.REPLAY) {
 				self.stop();
-		
 				self.call(self.onend);				
 			}
 		}
 		
 		if (!pause) {
-			setTimeout(this.run, self.DELAY);
+			setTimeout(self.run, self.DELAY);
 		}
 	};
 	
 	this.start = function () {
 		pause = false;
-		this.run();
+		self.run();
 	};
 	
 	this.stop = function () {
@@ -110,17 +109,19 @@ function Player(element, videoUrl, frameAmount)
 	
 	this.load = function () 
 	{
-		this.img.src = videoUrl;
+		self.img.src = videoUrl;
 	};
 }
 
 function Recorder(element, initSource)
 {
 	AbstractPlayer.call(this, element, initSource.frameAmount);
+	
+	this.sources = [];
 
 	var self = this,
-		sources = [],
-		activePlayer = null;
+		activePlayer = null,
+		record = true;
 	
 	this.active = function () 
 	{
@@ -130,26 +131,43 @@ function Recorder(element, initSource)
 		return activePlayer;
 	};
 	
+	this.record = function ()
+	{
+		if (arguments.length > 0) {
+			record = arguments[0];
+		}
+		
+		return record;
+	};
+	
 	var parentIterate = this._iterate;
 	this._iterate = function ()
 	{
-		sources[this.counter] = this.active();
+		if (record) {
+			self.sources[self.counter] = self.active();
+		}
 
-		if (this.counter == 0 || sources[this.counter-1] != sources[this.counter]) {
-			this._setFrameStyle(sources[this.counter].img);
+		if (self.counter == 0 || self.sources[self.counter-1] != self.sources[self.counter]) {
+			self._setFrameStyle(self.sources[self.counter].img);
 		}
 		
-		parentIterate.call(this);
-		element.style.backgroundImage = 'url(' + sources[self.counter].src + ')';
+		parentIterate.call(self);
+		element.style.backgroundImage = 'url(' + self.sources[self.counter].src + ')';
 	};
 	
-	sources[0] = this.active(initSource);
-	var source0Onload = sources[0].onload ? sources[0].onload : function () {};
-	sources[0].onload = function ()
+	self.sources[0] = this.active(initSource);
+	var source0Onload = self.sources[0].onload ? self.sources[0].onload : function () {};
+	self.sources[0].onload = function ()
 	{
 		source0Onload();
 		self._iterate();
 	};
+}
+
+function MixedPlayer (element, recorder)
+{
+	Recorder.call(this, element, recorder.sources[0]);
+	this.sources = recorder.sources;
 }
 
 function Mixer()
@@ -168,6 +186,7 @@ function Mixer()
 				removeClass(active.element, 'active-player');
 			}
 			active = arguments[0];
+			mainPlayer.active(active);
 			active.element.className += ' active-player';
 		} else {
 			return active;
@@ -187,7 +206,7 @@ function Mixer()
 	this.played = false;
 
 	this.start = function () {
-		this.played = true;
+		self.played = true;
 		mainPlayer.start();
 		players.map(function (player) {
 			player.start();
@@ -197,7 +216,7 @@ function Mixer()
 
 	this.stop = function () 
 	{
-		this.played = false;
+		self.played = false;
 		mainPlayer.stop();
 		players.map(function (player) {
 			player.stop();
@@ -206,8 +225,9 @@ function Mixer()
 		call(self.onstop, self);
 	};
 	
-	this.play = function () 
+	this.play = function (record) 
 	{
+		mainPlayer.record(record);
 		
 		if (this.played) {
 			this.stop();
@@ -240,10 +260,6 @@ function Mixer()
 					
 				});
 				
-				if (i == 1) {
-					self.active(player);
-				}
-				
 				/*
 				 * streams default height fix
 				 */
@@ -262,6 +278,13 @@ function Mixer()
 			self.stop();
 		};
 		
+		var player0Onload = players[0].onload;
+		players[0].onload = function ()
+		{
+			player0Onload();
+			self.active(players[0]);
+		};
+		
 	} init();
 	
 	function load() 
@@ -276,11 +299,17 @@ function Mixer()
 window.onload = function () {
 	var mixer = new Mixer;
 	mixer.onstop = function () {
-		document.querySelector('.buttons .play').innerHTML = 'Start';
+		document.querySelector('.buttons .record').innerHTML = 'Record';
+		document.querySelector('.buttons .play').innerHTML = 'Play';
 	};
-	document.querySelector('.buttons .play').addEventListener('click', function () {
-		if (mixer.play()) {
-			document.querySelector('.buttons .play').innerHTML = 'Stop';
+	var playCallback = function () {
+		console.log('hi!');
+		var record = this.className.indexOf("record") > -1 ? true : false;
+		if (mixer.play(record)) {
+			document.querySelector('.buttons .record').innerHTML = 'Stop';
+			document.querySelector('.buttons .play').innerHTML = 'Pause';
 		}
-	});
+	};
+	document.querySelector('.buttons .record').addEventListener('click', playCallback);
+	document.querySelector('.buttons .play').addEventListener('click', playCallback);
 };
