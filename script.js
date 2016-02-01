@@ -113,6 +113,11 @@ function Player(element, videoUrl, frameAmount)
 	};
 }
 
+function UnrecordedVideoPlaying()
+{
+	this.message = "You're trying to play unrecorded video. Mix it at first!";
+}
+
 function Recorder(element, initSource)
 {
 	AbstractPlayer.call(this, element, initSource.frameAmount);
@@ -147,6 +152,10 @@ function Recorder(element, initSource)
 			self.sources[self.counter] = self.active();
 		}
 
+		if (typeof self.sources[self.counter] === 'undefined') {
+			throw new UnrecordedVideoPlaying();
+		}
+		
 		if (self.counter == 0 || self.sources[self.counter-1] != self.sources[self.counter]) {
 			self._setFrameStyle(self.sources[self.counter].img);
 		}
@@ -155,19 +164,7 @@ function Recorder(element, initSource)
 		element.style.backgroundImage = 'url(' + self.sources[self.counter].src + ')';
 	};
 	
-	self.sources[0] = this.active(initSource);
-	var source0Onload = self.sources[0].onload ? self.sources[0].onload : function () {};
-	self.sources[0].onload = function ()
-	{
-		source0Onload();
-		self._iterate();
-	};
-}
-
-function MixedPlayer (element, recorder)
-{
-	Recorder.call(this, element, recorder.sources[0]);
-	this.sources = recorder.sources;
+	this.active(initSource);
 }
 
 function Mixer()
@@ -206,12 +203,18 @@ function Mixer()
 	this.played = false;
 
 	this.start = function () {
-		self.played = true;
-		mainPlayer.start();
-		players.map(function (player) {
-			player.start();
-		});
-		scroll();
+		try {
+			mainPlayer.start();
+			players.map(function (player) {
+				player.start();
+			});
+			self.played = true;
+			scroll();
+		} catch (e) {
+			if (e.constructor.name == 'UnrecordedVideoPlaying') {
+				alert(e.message);
+			}
+		}
 	};
 
 	this.stop = function () 
@@ -234,7 +237,7 @@ function Mixer()
 		} else {
 			this.start();
 		}
-		
+
 		return this.played;
 	};
 
@@ -303,7 +306,6 @@ window.onload = function () {
 		document.querySelector('.buttons .play').innerHTML = 'Play';
 	};
 	var playCallback = function () {
-		console.log('hi!');
 		var record = this.className.indexOf("record") > -1 ? true : false;
 		if (mixer.play(record)) {
 			document.querySelector('.buttons .record').innerHTML = 'Stop';
