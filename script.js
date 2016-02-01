@@ -8,8 +8,23 @@ function removeClass(element, className)
 	element.className = element.className.replace(new RegExp(className, 'g'), '');
 }
 
+function call(func, self)
+{
+	if (func && {}.toString.call(func) === '[object Function]') {
+		return func.call(self);
+	}
+	return null;
+}
+
 function AbstractPlayer(element, frameAmount) 
 {
+	var self = this;
+	
+	this.call = function (func) 
+	{
+		return call(func, self);
+	};
+
 	this.frame = {};
 	this.element = element;
 	this.counter = 0;
@@ -20,8 +35,7 @@ function AbstractPlayer(element, frameAmount)
 
 	this.onend = null;
 	
-	var self = this,
-		pause = true,
+	var pause = true,
 		frame = this.frame;
 
 	this._iterate = function ()
@@ -29,7 +43,7 @@ function AbstractPlayer(element, frameAmount)
 		element.style.backgroundPosition = '0px ' + (-self.counter * frame.height) + 'px';
 	};
 
-	function run()
+	this.run = function ()
 	{
 		self._iterate();
 		
@@ -39,21 +53,18 @@ function AbstractPlayer(element, frameAmount)
 			if (!self.REPLAY) {
 				self.stop();
 		
-				if (self.onend && {}.toString.call(self.onend) === '[object Function]') {
-					self.onend.call(self);
-				}
-				
+				self.call(self.onend);				
 			}
 		}
 		
 		if (!pause) {
-			setTimeout(run, self.DELAY);
+			setTimeout(this.run, self.DELAY);
 		}
 	};
 	
 	this.start = function () {
 		pause = false;
-		run();
+		this.run();
 	};
 	
 	this.stop = function () {
@@ -94,10 +105,7 @@ function Player(element, videoUrl, frameAmount)
 	{
 		element.style.backgroundImage = 'url(' + videoUrl + ')';
 		self._setFrameStyle(self.img);
-		
-		if (self.onload && {}.toString.call(self.onload) === '[object Function]') {
-			self.onload.call(self);
-		}
+		self.call(self.onload);
 	};
 	
 	this.load = function () 
@@ -111,11 +119,22 @@ function Recorder(element, initSource)
 	AbstractPlayer.call(this, element, initSource.frameAmount);
 
 	var self = this,
-		sources = [];
+		sources = [],
+		activePlayer = null;
+	
+	this.active = function () 
+	{
+		if (arguments.length) {
+			activePlayer = arguments[0];
+		} 
+		return activePlayer;
+	};
 	
 	var parentIterate = this._iterate;
 	this._iterate = function ()
 	{
+		sources[this.counter] = this.active();
+
 		if (this.counter == 0 || sources[this.counter-1] != sources[this.counter]) {
 			this._setFrameStyle(sources[this.counter].img);
 		}
@@ -123,11 +142,8 @@ function Recorder(element, initSource)
 		parentIterate.call(this);
 		element.style.backgroundImage = 'url(' + sources[self.counter].src + ')';
 	};
-
-	for (var i=0; i < this.frameAmount; i++) {
-		sources[i] = initSource;
-	}
 	
+	sources[0] = this.active(initSource);
 	var source0Onload = sources[0].onload ? sources[0].onload : function () {};
 	sources[0].onload = function ()
 	{
@@ -187,9 +203,7 @@ function Mixer()
 			player.stop();
 		});
 		
-		if (self.onstop && {}.toString.call(self.onstop) === '[object Function]') {
-			self.onstop.call(self);
-		}
+		call(self.onstop, self);
 	};
 	
 	this.play = function () 
