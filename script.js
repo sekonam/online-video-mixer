@@ -156,7 +156,7 @@ function Recorder(element, initSource)
 			throw new UnrecordedVideoPlaying();
 		}
 		
-		if (self.counter == 0 || self.sources[self.counter-1] != self.sources[self.counter]) {
+		if (self.counter === 0 || self.sources[self.counter-1] !== self.sources[self.counter]) {
 			self._setFrameStyle(self.sources[self.counter].img);
 		}
 		
@@ -164,7 +164,17 @@ function Recorder(element, initSource)
 		element.style.backgroundImage = 'url(' + self.sources[self.counter].src + ')';
 	};
 	
-	this.active(initSource);
+	for (var i=0; i<this.frameAmount; i++) {
+		this.sources[i] = initSource;
+	}
+
+	var initOnload = initSource.onload ? initSource.onload : function () {};
+	initSource.onload = function ()
+	{
+		initOnload();
+		self.active(initSource);
+		self._iterate();
+	};
 }
 
 function Mixer()
