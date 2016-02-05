@@ -16,6 +16,11 @@ function call(func, self)
 	return null;
 }
 
+function PositionError() 
+{
+	this.message = "Wrong position";
+}
+
 function AbstractPlayer(element, frameAmount) 
 {
 	var self = this;
@@ -68,6 +73,16 @@ function AbstractPlayer(element, frameAmount)
 	
 	this.stop = function () {
 		pause = true;
+	};
+	
+	this.goto = function (pos)
+	{
+		if (0 <= pos && pos < self.frameAmount) {
+			self.counter = pos;
+			self._iterate();
+		} else {
+			throw new PositionError();
+		}
 	};
 	
 	this._setFrameStyle = function (img) 
@@ -250,6 +265,15 @@ function Mixer()
 
 		return this.played;
 	};
+	
+	this.goto = function (pos)
+	{
+		this.stop();
+		mainPlayer.goto(pos);
+		players.map(function (player) {
+			player.goto(pos);
+		});
+	};
 
 	function init()
 	{
@@ -290,6 +314,14 @@ function Mixer()
 		mainPlayer.onend = function () {
 			self.stop();
 		};
+		
+		document.querySelector('.record-progress').addEventListener('click', function (e) {
+			var x = e.clientX - this.offsetLeft,
+				w = this.offsetWidth,
+				pos = Math.floor(mainPlayer.frameAmount * x / w);
+			self.goto(pos);
+			document.querySelector('.indicator').style.left = Math.floor(pos * w / mainPlayer.frameAmount) + 'px';
+		});
 		
 		var player0Onload = players[0].onload;
 		players[0].onload = function ()
