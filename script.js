@@ -138,6 +138,7 @@ function Recorder(element, initSource)
 	AbstractPlayer.call(this, element, initSource.frameAmount);
 	
 	this.sources = [];
+	this.onrecord = null;
 
 	var self = this,
 		activePlayer = null,
@@ -165,6 +166,7 @@ function Recorder(element, initSource)
 	{
 		if (record) {
 			self.sources[self.counter] = self.active();
+			self.call(self.onrecord);
 		}
 
 		if (typeof self.sources[self.counter] === 'undefined') {
@@ -314,6 +316,27 @@ function Mixer()
 		mainPlayer.onend = function () {
 			self.stop();
 		};
+
+		/*
+		 * 
+		 */
+		var recordFlags = document.querySelector('.record-flags'),
+			color = getStyleRead(document.querySelector('.all-streams .stream:nth-child(1) .player .color-flag')).backgroundColor;
+				
+		for (var j=0; j<mainPlayer.frameAmount; j++) {
+			var recordFlagSection = document.createElement("div");
+			recordFlagSection.className = 'record-flag-section';
+			recordFlagSection.style.width = 100 / mainPlayer.frameAmount + '%';
+			recordFlagSection.style.backgroundColor = color;
+			recordFlags.appendChild(recordFlagSection);
+		}
+		
+		mainPlayer.onrecord = function () 
+		{
+			recordFlags.querySelector('.record-flag-section:nth-child(' +  (mainPlayer.counter + 1) + ')').style.backgroundColor = 
+					getStyleRead(mainPlayer.active().element.querySelector('.color-flag')).backgroundColor;
+		};
+				
 		
 		document.querySelector('.record-progress').addEventListener('click', function (e) {
 			var x = e.clientX - this.offsetLeft,

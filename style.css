@@ -9,8 +9,8 @@
 	background-repeat:no-repeat;
 }
 
-.all-streams .player::after {
-	content:"";
+.all-streams .player .color-flag {
+	content:" ";
 	display:block;
 	width:100%;
 	height:15px;
@@ -31,19 +31,19 @@
 	border:5px solid gray;
 }
 
-.stream:nth-child(1) .player::after {
+.all-streams .stream:nth-child(1) .player .color-flag {
 	background-color:red;
 }
 
-.stream:nth-child(2) .player::after {
+.all-streams .stream:nth-child(2) .player .color-flag {
 	background-color:yellow;
 }
 
-.stream:nth-child(3) .player::after {
+.all-streams .stream:nth-child(3) .player .color-flag {
 	background-color:greenyellow;
 }
 
-.stream:nth-child(4) .player::after {
+.all-streams .stream:nth-child(4) .player .color-flag {
 	background-color:blue;
 }
 
@@ -65,8 +65,15 @@
 	margin-bottom:5%;
 }
 
-.record-flogs {
+.record-flags {
 	clear:both;
+	height:10px;
+	margin-bottom: 10px;
+}
+
+.record-flag-section {
+	float:left;
+	height:100%;
 }
 
 .record-progress {
@@ -74,6 +81,7 @@
 	border:1px solid gray;
 	background-color:lightgray;
 	position:relative;
+	cursor:pointer;
 }
 
 .record-progress .indicator {
